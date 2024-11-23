@@ -10,6 +10,7 @@ evm-history
 
 ```
 # build with local profile, without tests, with docker image build
+# (!!!) Use java 21 to build, because lombok do not support java 23+
 mvn clean install
 # with tests, test using dev services, so no need to run any infra
 mvn clean install -DskipTests=false
@@ -26,6 +27,11 @@ docker compose -f project.yml up -d
 # for runing project from IDE, just run io.evm.history.Main.main(String... args)
 ```
 
+## LOCAL: Checking data
+```
+
+```
+
 ## LOCAL: Stop the application
 
 ```
@@ -34,13 +40,13 @@ cd {project-root}/src/main/docker
 docker compose -f project.yml down 
 # stop the infra
 docker compose down
+# if you want the volumes also to be deleted
+docker compose down -v
 ```
 
-## API documentation
-| Name         | URL                | Description                                                                                                                                              |
-|--------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Auth page    | `{host}/`          | Login and get your token by accessing the authentication page. By using this simple authentication process, you can easily access our API documentation. |
-| Api doc page | `{host}/q/doc`     | Once you have your token, use it to authorize your access to the Open API 3 page                                                                         |
-| Healthcheck  | `{host}/q/health`  | Healthcheck endpoint                                                                                                                                     |
-| Metrics      | `{host}/q/metrics` | Metrics endpoint. Return metrics in 'Prometheus' format                                                                                                  |
+## HTTP routes
+| Name         | URL                | Description                                             |
+|--------------|--------------------|---------------------------------------------------------|
+| Healthcheck  | `{host}/q/health`  | Healthcheck endpoint                                    |
+| Metrics      | `{host}/q/metrics` | Metrics endpoint. Return metrics in 'Prometheus' format |
 

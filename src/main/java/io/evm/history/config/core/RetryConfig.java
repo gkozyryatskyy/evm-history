@@ -10,6 +10,6 @@ public interface RetryConfig {
     int maxBackoff();
     @WithDefault("0.2")
     double jitter();
-    @WithDefault("10")
+    @WithDefault("60")
     int atMost();
 }

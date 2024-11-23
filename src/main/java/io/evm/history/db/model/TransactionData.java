@@ -4,12 +4,14 @@ import io.evm.history.db.model.core.ITimeSeries;
 import io.evm.history.service.model.TransactionReceiptContractWrapper;
 import io.evm.history.util.RawUtil;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
 public class TransactionData implements ITimeSeries {
 
     // block
@@ -27,6 +29,8 @@ public class TransactionData implements ITimeSeries {
     private Long gasUsed;
     private String from;
     private String to;
+    // contract
+    private Integer codeBytesLength;
 
     public TransactionData(TransactionReceiptContractWrapper data) {
         // block
@@ -44,5 +48,8 @@ public class TransactionData implements ITimeSeries {
         this.gasUsed = RawUtil.bigint(data.getReceipt()::getGasUsedRaw, data.getReceipt()::getGasUsed).longValue();
         this.from = data.getReceipt().getFrom();
         this.to = data.getReceipt().getTo();
+        if (data.getCodeBytesLength() != null) {
+            this.codeBytesLength = data.getCodeBytesLength();
+        }
     }
 }

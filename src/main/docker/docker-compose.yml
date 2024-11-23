@@ -25,6 +25,15 @@ services:
       - evm-history-es-data1:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -XGET 'http://localhost:9200/_cluster/health?pretty' | grep status | grep -q '\\(green\\|yellow\\)'"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
     networks:
       - evm-history-net
 
@@ -33,9 +42,10 @@ services:
     container_name: kibana-node1
     depends_on:
       es-node1:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - evm-history-kibana-node1:/usr/share/kibana/data
+      - ./dashboard.ndjson:/usr/share/kibana/config/dashboard.ndjson
     ports:
       - "5601:5601"
     expose:
@@ -43,6 +53,12 @@ services:
     environment:
       SERVER_NAME: kibana
       ELASTICSEARCH_HOSTS: '["http://es-node1:9200"]'
+    working_dir: /usr/share/kibana/config
+    healthcheck:
+      test: curl -s -XPOST 'localhost:5601/api/saved_objects/_import?overwrite=true' -H 'kbn-xsrf:true' --form file=@dashboard.ndjson >/dev/null || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 30
     networks:
       - evm-history-net
 

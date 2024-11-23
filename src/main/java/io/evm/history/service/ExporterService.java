@@ -54,7 +54,7 @@ public class ExporterService {
         List<ContractData> contracts = new ArrayList<>();
         for (TransactionReceiptContractWrapper tx : data) {
             transactions.add(new TransactionData(tx));
-            if (tx.getReceipt() != null && tx.getCodeBytesLength() != null) {
+            if (tx.isCreateContract()) {
                 // contract persisted with first transaction in batch, where it is found
                 contracts.add(new ContractData(tx));
             }

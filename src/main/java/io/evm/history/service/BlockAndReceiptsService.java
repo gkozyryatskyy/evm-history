@@ -131,7 +131,7 @@ public class BlockAndReceiptsService {
         // group for mapping
         log.infof("Contracts:%s", signature);
         // used for batch response backward mapping. Contract code added for first transaction in batch, where it is found
-        List<TransactionReceiptContractWrapper> listOfTxTo = new ArrayList<>();
+        List<List<TransactionReceiptContractWrapper>> listOfTxTo = new ArrayList<>();
         // send batch request
         BatchRequest batch = eth.newBatch();
         //TODO add caching check
@@ -142,17 +142,18 @@ public class BlockAndReceiptsService {
                     Request<?, EthGetCode> req = eth.ethGetCode(to, DefaultBlockParameterName.LATEST);
                     req.setId(listOfTxTo.size());
                     batch.add(req);
-                    listOfTxTo.add(list.getFirst());
+                    listOfTxTo.add(list);
                 });
         return RetryUtil.retryBatch(log, "contracts(%s)".formatted(signature), config, batch.sendAsync())
                 .invoke(resp -> resp.getResponses()
-                        .forEach(e -> {
-                            String code = (String) e.getResult();
+                        .forEach(r -> {
+                            String code = (String) r.getResult();
                             if (code != null) {
-                                TransactionReceiptContractWrapper wrapper = listOfTxTo.get((int) e.getId());
+                                List<TransactionReceiptContractWrapper> wrapper = listOfTxTo.get((int) r.getId());
                                 int codeBytesLength = code.getBytes().length;
                                 if (wrapper != null) {
-                                    wrapper.setCodeBytesLength(codeBytesLength);
+                                    wrapper.getFirst().setCreateContract(true);
+                                    wrapper.forEach(e -> e.setCodeBytesLength(codeBytesLength));
                                 }
                             }
                         })

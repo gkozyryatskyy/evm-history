@@ -18,4 +18,6 @@ public interface _TransactionData extends _Timeseries {
     String gasUsed = "gasUsed";
     String from = "from";
     String to = "to";
+    // contract
+    String codeBytesLength = "codeBytesLength";
 }

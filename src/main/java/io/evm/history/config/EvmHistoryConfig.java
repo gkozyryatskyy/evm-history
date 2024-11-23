@@ -18,7 +18,7 @@ public interface EvmHistoryConfig extends RetryConfig {
     int blockBatch();
     @WithDefault("100") // amount of receipts to request from RPC node
     int receiptBatch();
-    @WithDefault("10") // amount of contracts to request from RPC node
+    @WithDefault("100") // amount of contracts to request from RPC node
     int contractBatch();
     @WithDefault("100") // amount of blocks to persist
     int persistBatch();

@@ -53,19 +53,6 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
                             );
                 }));
     }
-
-    // ------------------- CRUD -------------------
-    public Uni<IndexResponse> create(T e, Refresh refresh) {
-        return Uni.createFrom().completionStage(Unchecked.supplier(() ->
-                client.index(doc -> {
-                    doc.index(index(e.getTs())).document(e);
-                    if (refresh != null) {
-                        doc.refresh(refresh);
-                    }
-                    return doc;
-                })));
-    }
-
     // ------------------- BULK -------------------
     public Uni<BulkResponse> bulk(List<T> list) {
         return bulk(list, null);
