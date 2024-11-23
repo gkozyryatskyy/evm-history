@@ -3,6 +3,7 @@ package io.evm.history.util.retry;
 import io.evm.history.config.core.RetryConfig;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
+import lombok.experimental.UtilityClass;
 import org.jboss.logging.Logger;
 import org.web3j.protocol.core.BatchResponse;
 import org.web3j.protocol.core.Response;
@@ -15,9 +16,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+@UtilityClass
 public class RetryUtil {
 
-    public static Uni<BatchResponse> retryBatch(Logger log, String logMethod, RetryConfig config, CompletableFuture<BatchResponse> batchFuture) {
+    public  Uni<BatchResponse> retryBatch(Logger log, String logMethod, RetryConfig config, CompletableFuture<BatchResponse> batchFuture) {
         return retry(log, logMethod, config, Uni.createFrom()
                 // web3j http errors wrapped in ClientConnectionException
                 .completionStage(batchFuture)
@@ -36,7 +38,7 @@ public class RetryUtil {
                 })), e -> e instanceof IOException || e instanceof IllegalStateException || e instanceof ClientConnectionException);
     }
 
-    public static <T> Uni<T> retry(Logger log, String logMethod, RetryConfig config, Uni<T> uni, Predicate<? super Throwable> retry) {
+    public  <T> Uni<T> retry(Logger log, String logMethod, RetryConfig config, Uni<T> uni, Predicate<? super Throwable> retry) {
         AtomicInteger i = new AtomicInteger();
         return uni.onFailure(e -> {
                     if (retry.test(e)) {
