@@ -65,5 +65,6 @@ docker compose down -v
 
 # TODO
 - Switch contracts cache to Redis or DB calls
+- Track other contract interactions from logs
 - Get ABI and add abi parsing
 - Try to add contract code decompilation if there is no ABI available
