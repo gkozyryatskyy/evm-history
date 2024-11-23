@@ -33,7 +33,7 @@ public class ExporterService {
     ContractDataDao contractDao;
 
     void onStart(@Observes @Priority(Priorities.LIBRARY) StartupEvent ev) {
-        Uni.join().all(txDao.template(), contractDao.template()).andFailFast().await().indefinitely();
+        txDao.template().await().indefinitely();
     }
 
     public Uni<Void> export() {

@@ -1,13 +1,18 @@
 package io.evm.history.service;
 
 import io.evm.history.config.EvmHistoryConfig;
+import io.evm.history.db.dao.ContractDataDao;
 import io.evm.history.service.model.TransactionReceiptContractWrapper;
 import io.evm.history.util.block.IterableBlocks;
 import io.evm.history.util.retry.RetryUtil;
 import io.evm.history.util.retry.ThrottlingUtil;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.config.Priorities;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.extern.jbosslog.JBossLog;
 import org.web3j.protocol.Web3j;
@@ -21,6 +26,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @JBossLog
@@ -31,6 +37,16 @@ public class BlockAndReceiptsService {
     EvmHistoryConfig config;
     @Inject
     Web3j eth;
+    @Inject
+    ContractDataDao contractDao;
+    protected ConcurrentMap<String, Integer> contractCache;
+
+    void onStart(@Observes @Priority(Priorities.LIBRARY) StartupEvent ev) {
+        contractDao.template()
+                .chain(e -> contractDao.getAllContracts())
+                .invoke(e -> contractCache = e)
+                .await().indefinitely();
+    }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     public Multi<TransactionReceiptContractWrapper> data(BigInteger lastExistedBlock) {
@@ -138,11 +154,16 @@ public class BlockAndReceiptsService {
         txs.stream()
                 .filter(e -> e.getReceipt().getContractAddress() != null)
                 .collect(Collectors.groupingBy(e -> e.getReceipt().getContractAddress()))
-                .forEach((to, list) -> {
-                    Request<?, EthGetCode> req = eth.ethGetCode(to, DefaultBlockParameterName.LATEST);
-                    req.setId(listOfTxTo.size());
-                    batch.add(req);
-                    listOfTxTo.add(list);
+                .forEach((addr, list) -> {
+                    Integer codeLength = contractCache.get(addr);
+                    if (codeLength != null) {
+                        list.forEach(e -> e.setCodeBytesLength(codeLength));
+                    } else {
+                        Request<?, EthGetCode> req = eth.ethGetCode(addr, DefaultBlockParameterName.LATEST);
+                        req.setId(listOfTxTo.size());
+                        batch.add(req);
+                        listOfTxTo.add(list);
+                    }
                 });
         return RetryUtil.retryBatch(log, "contracts(%s)".formatted(signature), config, batch.sendAsync())
                 .invoke(resp -> resp.getResponses()
@@ -152,7 +173,9 @@ public class BlockAndReceiptsService {
                                 List<TransactionReceiptContractWrapper> wrapper = listOfTxTo.get((int) r.getId());
                                 int codeBytesLength = code.getBytes().length;
                                 if (wrapper != null) {
-                                    wrapper.getFirst().setCreateContract(true);
+                                    TransactionReceiptContractWrapper first = wrapper.getFirst();
+                                    first.setCreateContract(true);
+                                    this.contractCache.put(first.getReceipt().getContractAddress(), codeBytesLength);
                                     wrapper.forEach(e -> e.setCodeBytesLength(codeBytesLength));
                                 }
                             }

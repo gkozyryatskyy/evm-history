@@ -31,8 +31,7 @@ public class TransactionDataDao extends CrudDao<TransactionData> {
     }
 
     public Uni<Long> findLastBlockNumber() {
-        return search(r -> r
-                .size(1)
+        return search(r -> r.size(1)
                 .sort(List.of(SortOptions.of(s -> s.field(f -> f.field(_Timeseries.timestamp).order(SortOrder.Desc))))))
                 .map(e -> e == null || e.hits().hits().isEmpty() ? null : Optional.of(e.hits().hits().getFirst())
                         .map(Hit::source)

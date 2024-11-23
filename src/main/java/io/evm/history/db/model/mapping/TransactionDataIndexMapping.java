@@ -27,7 +27,7 @@ public class TransactionDataIndexMapping implements IIndexMapping {
                 .properties(_TransactionData.gas, prop -> prop.keyword(e -> e))
                 .properties(_TransactionData.input, prop -> prop.keyword(e -> e))
                 .properties(_TransactionData.type, prop -> prop.keyword(e -> e))
-                // receiptx
+                // receipt
                 .properties(_TransactionData.contractAddress, prop -> prop.keyword(k ->
                         k.fields("ts", e -> e.text(t -> t.analyzer("keyword_edge_ngram")
                                 .searchAnalyzer("keyword_edge_ngram_search")))))

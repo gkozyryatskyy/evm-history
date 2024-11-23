@@ -1,5 +1,6 @@
 package io.evm.history.db.model;
 
+import io.evm.history.db.model.core.IGeneratedId;
 import io.evm.history.db.model.core.ITimeSeries;
 import io.evm.history.service.model.TransactionReceiptContractWrapper;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ContractData implements ITimeSeries {
+public class ContractData implements ITimeSeries, IGeneratedId {
 
     private Long ts;
     private String address;
@@ -19,5 +20,10 @@ public class ContractData implements ITimeSeries {
         this.ts = data.timestamp();
         this.address = data.getReceipt().getContractAddress();
         this.codeBytesLength = data.getCodeBytesLength();
+    }
+
+    @Override
+    public String generateId() {
+        return address;
     }
 }

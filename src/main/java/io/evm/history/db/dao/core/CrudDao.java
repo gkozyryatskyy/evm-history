@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateResponse;
 import io.evm.history.config.core.EsIndexConfig;
+import io.evm.history.db.model.core.IGeneratedId;
 import io.evm.history.db.model.core.IIndexMapping;
 import io.evm.history.db.model.core.ITimeSeries;
 import io.smallrye.mutiny.Uni;
@@ -23,12 +24,18 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
     protected final EsIndexConfig config;
     protected final IIndexMapping indexConfig;
     protected final Class<T> type;
+    protected final boolean generatedId;
 
     public CrudDao(EsIndexConfig config, ElasticsearchAsyncClient client, IIndexMapping indexConfig, Class<T> type) {
         super(client);
         this.config = config;
         this.indexConfig = indexConfig;
         this.type = type;
+        if (type != null) { // for dependency injection constructor
+            this.generatedId = IGeneratedId.class.isAssignableFrom(type);
+        } else {
+            this.generatedId = false;
+        }
     }
 
     public String index(Long ts) {
@@ -95,6 +102,9 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
     public BulkOperation bulkOpIndex(T e) {
         return BulkOperation.of(op -> op.index(index -> {
             index.index(index(e.getTs())).document(e);
+            if (generatedId) {
+                index.id(((IGeneratedId) e).generateId());
+            }
             return index;
         }));
     }
