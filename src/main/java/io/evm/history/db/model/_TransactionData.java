@@ -11,7 +11,6 @@ public interface _TransactionData extends _Timeseries {
     String txHash = "txHash";
     String value = "value";
     String gas = "gas";
-    String input = "input";
     String type = "type";
     // receipt
     String contractAddress = "contractAddress";

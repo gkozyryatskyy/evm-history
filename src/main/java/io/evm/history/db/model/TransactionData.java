@@ -22,7 +22,6 @@ public class TransactionData implements ITimeSeries {
     private String txHash;
     private String value;
     private String gas;
-    private String input;
     private String type;
     // receipt
     private String contractAddress;
@@ -41,7 +40,6 @@ public class TransactionData implements ITimeSeries {
         this.txHash = data.getTx().getHash();
         this.value = data.getTx().getValueRaw();
         this.gas = data.getTx().getGasRaw();
-        this.input = data.getTx().getInput();
         this.type = data.getTx().getType();
         // receipt
         this.contractAddress = data.getReceipt().getContractAddress();

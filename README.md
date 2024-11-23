@@ -28,11 +28,12 @@ docker compose -f project.yml up -d
 ```
 
 ## LOCAL: Dashboard
+
 ```
 # Open dashboard
-http://localhost:5601/app/dashboards#/view/5f077338-3ff2-401d-8053-ce95347866bf?_g=(filters:!(),refreshInterval:(pause:!f,value:60000),time:(from:now-1y,to:now))
+http://localhost:8080/
 ```
-![Screenshot 2024-11-24 at 00.15.26.png](Screenshot%202024-11-24%20at%2000.15.26.png)
+![Screenshot 2024-11-24 at 01.21.50.png](Screenshot%202024-11-24%20at%2001.21.50.png)
 
 ## LOCAL: Stop the application
 
@@ -47,8 +48,22 @@ docker compose down -v
 ```
 
 ## HTTP routes
-| Name         | URL                | Description                                             |
-|--------------|--------------------|---------------------------------------------------------|
-| Healthcheck  | `{host}/q/health`  | Healthcheck endpoint                                    |
-| Metrics      | `{host}/q/metrics` | Metrics endpoint. Return metrics in 'Prometheus' format |
 
+| Name        | URL                        | Description                                             |
+|-------------|----------------------------|---------------------------------------------------------|
+| Dashboard   | `localhost:8080`           | Dashboard endpoint                                      |
+| Healthcheck | `localhost:8080/q/health`  | Healthcheck endpoint                                    |
+| Metrics     | `localhost:8080/q/metrics` | Metrics endpoint. Return metrics in 'Prometheus' format |
+
+## INFO
+
+- All RPC calls (blocks, receipts, contract code) are `batched`
+- Added `throttling` and `retries` to address rate limits and service unavailability
+- Data is `yearly partitioned`, so we assume to be ok on performance even with whole blockchain data (testnet for sure)
+- Data is `indexed`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure)
+- Partial search indexed as `edge_ngram`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure)
+
+# TODO
+- Switch contracts cache to Redis or DB calls
+- Get ABI and add abi parsing
+- Try to add contract code decompilation if there is no ABI available
