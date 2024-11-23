@@ -44,7 +44,10 @@ public class BlockAndReceiptsService {
     void onStart(@Observes @Priority(Priorities.LIBRARY) StartupEvent ev) {
         contractDao.template()
                 .chain(e -> contractDao.getAllContracts())
-                .invoke(e -> contractCache = e)
+                .invoke(e -> {
+                    contractCache = e;
+                    log.infof("Init contract cache:%s", contractCache.size());
+                })
                 .await().indefinitely();
     }
 
