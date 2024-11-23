@@ -29,7 +29,8 @@ docker compose -f project.yml up -d
 
 ## LOCAL: Checking data
 ```
-
+# Open dashboard
+http://localhost:5601/app/dashboards#/view/5f077338-3ff2-401d-8053-ce95347866bf?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now-1y,to:now))
 ```
 
 ## LOCAL: Stop the application
