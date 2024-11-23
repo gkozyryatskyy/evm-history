@@ -12,7 +12,7 @@ public class TransactionReceiptContractWrapper extends BlockWrapper {
 
     private final Transaction tx;
     private TransactionReceipt receipt;
-    private String contractCode;
+    private Integer codeBytesLength;
 
     public TransactionReceiptContractWrapper(EthBlock.Block block, Transaction tx) {
         super(block);

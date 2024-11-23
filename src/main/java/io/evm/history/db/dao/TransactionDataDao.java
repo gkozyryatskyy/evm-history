@@ -7,13 +7,12 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.evm.history.config.TransactionIndexConfig;
 import io.evm.history.db.dao.core.CrudDao;
 import io.evm.history.db.model.TransactionData;
-import io.evm.history.db.model.TransactionDataIndexMapping;
+import io.evm.history.db.model.mapping.TransactionDataIndexMapping;
 import io.evm.history.db.model.core._Timeseries;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +30,7 @@ public class TransactionDataDao extends CrudDao<TransactionData> {
         super(config, client, TransactionDataIndexMapping.INSTANCE, TransactionData.class);
     }
 
-    public Uni<BigInteger> findLastBlockNumber() {
+    public Uni<Long> findLastBlockNumber() {
         return search(r -> r
                 .size(1)
                 .sort(List.of(SortOptions.of(s -> s.field(f -> f.field(_Timeseries.timestamp).order(SortOrder.Desc))))))

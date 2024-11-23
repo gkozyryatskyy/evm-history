@@ -1,7 +1,9 @@
 package io.evm.history.service;
 
 import io.evm.history.config.EvmHistoryConfig;
+import io.evm.history.db.dao.ContractDataDao;
 import io.evm.history.db.dao.TransactionDataDao;
+import io.evm.history.db.model.ContractData;
 import io.evm.history.db.model.TransactionData;
 import io.evm.history.service.model.TransactionReceiptContractWrapper;
 import io.quarkus.runtime.StartupEvent;
@@ -13,6 +15,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.extern.jbosslog.JBossLog;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,9 +29,11 @@ public class ExporterService {
     BlockAndReceiptsService txService;
     @Inject
     TransactionDataDao txDao;
+    @Inject
+    ContractDataDao contractDao;
 
     void onStart(@Observes @Priority(Priorities.LIBRARY) StartupEvent ev) {
-        txDao.template().await().indefinitely();
+        Uni.join().all(txDao.template(), contractDao.template()).andFailFast().await().indefinitely();
     }
 
     public Uni<Void> export() {
@@ -36,7 +41,7 @@ public class ExporterService {
         return txDao.findLastBlockNumber()
                 .onItem()
                 // !!! re fetching last block, because it can be persisted not fully
-                .transformToMulti(lastBlock -> txService.data(lastBlock))
+                .transformToMulti(lastBlock -> txService.data(lastBlock == null ? null : BigInteger.valueOf(lastBlock)))
                 .group()
                 .intoLists()
                 .of(config.persistBatch())
@@ -44,16 +49,22 @@ public class ExporterService {
                 .onItem().ignoreAsUni();
     }
 
-    protected Uni<Void> persist(List<TransactionReceiptContractWrapper> txs) {
-        List<TransactionData> persist = new ArrayList<>();
-        for (TransactionReceiptContractWrapper tx : txs) {
-            persist.add(new TransactionData(tx.timestamp(), tx.getBlock(), tx.getTx(), tx.getContractCode()));
+    protected Uni<Void> persist(List<TransactionReceiptContractWrapper> data) {
+        List<TransactionData> transactions = new ArrayList<>();
+        List<ContractData> contracts = new ArrayList<>();
+        for (TransactionReceiptContractWrapper tx : data) {
+            transactions.add(new TransactionData(tx));
+            if (tx.getReceipt() != null && tx.getCodeBytesLength() != null) {
+                // contract persisted with first transaction in batch, where it is found
+                contracts.add(new ContractData(tx));
+            }
         }
-        if (!persist.isEmpty()) {
-            log.infof("Persist:%s[%s-%s]", persist.size(), txs.getFirst().getBlock().getNumber(), txs.getLast()
+        if (!transactions.isEmpty()) {
+            log.infof("Persist:%s[%s-%s]", transactions.size() + contracts.size(), data.getFirst()
                     .getBlock()
-                    .getNumber());
-            return txDao.bulk(persist).replaceWithVoid();
+                    .getNumber(), data.getLast().getBlock().getNumber());
+            return txDao.mBulk(List.of(txDao.bulkOpIndex(transactions), contractDao.bulkOpIndex(contracts)))
+                    .replaceWithVoid();
         } else {
             return Uni.createFrom().voidItem();
         }

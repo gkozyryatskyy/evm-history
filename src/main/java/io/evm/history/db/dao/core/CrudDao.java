@@ -14,6 +14,7 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -109,6 +110,23 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
             index.index(index(e.getTs())).document(e);
             return index;
         }));
+    }
+
+    public Uni<BulkResponse> mBulk(List<List<BulkOperation>> lists) {
+        return mBulk(lists, null);
+    }
+
+    public Uni<BulkResponse> mBulk(List<List<BulkOperation>> lists, Refresh refresh) {
+        return bulk(mBulkReq(lists, refresh));
+    }
+
+    protected BulkRequest mBulkReq(List<List<BulkOperation>> lists, Refresh refresh) {
+        BulkRequest.Builder bulk = new BulkRequest.Builder();
+        bulk.operations(lists.stream().flatMap(Collection::stream).toList());
+        if (refresh != null) {
+            bulk.refresh(refresh);
+        }
+        return bulk.build();
     }
 
     // ------------------- SEARCH -------------------

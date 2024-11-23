@@ -108,8 +108,8 @@ public class BlockAndReceiptsService {
             batch.add(req);
         }
         return RetryUtil.retryBatch(log, "receipts(%s)".formatted(signature), config, batch.sendAsync())
-                .map(resp -> resp.getResponses().stream()
-                        .peek(e -> {
+                .invoke(resp -> resp.getResponses()
+                        .forEach(e -> {
                             TransactionReceipt receipt = (TransactionReceipt) e.getResult();
                             if (receipt != null) {
                                 TransactionReceiptContractWrapper wrapper = txs.get((int) e.getId());
@@ -130,26 +130,29 @@ public class BlockAndReceiptsService {
                 .getHash());
         // group for mapping
         log.infof("Contracts:%s", signature);
-        List<List<TransactionReceiptContractWrapper>> listOfTxTo = new ArrayList<>(); // used for batch response backward mapping
+        // used for batch response backward mapping. Contract code added for first transaction in batch, where it is found
+        List<TransactionReceiptContractWrapper> listOfTxTo = new ArrayList<>();
         // send batch request
         BatchRequest batch = eth.newBatch();
         //TODO add caching check
         txs.stream()
-                .collect(Collectors.groupingBy(e -> e.getTx().getTo()))
+                .filter(e -> e.getReceipt().getContractAddress() != null)
+                .collect(Collectors.groupingBy(e -> e.getReceipt().getContractAddress()))
                 .forEach((to, list) -> {
                     Request<?, EthGetCode> req = eth.ethGetCode(to, DefaultBlockParameterName.LATEST);
                     req.setId(listOfTxTo.size());
                     batch.add(req);
-                    listOfTxTo.add(list);
+                    listOfTxTo.add(list.getFirst());
                 });
         return RetryUtil.retryBatch(log, "contracts(%s)".formatted(signature), config, batch.sendAsync())
-                .map(resp -> resp.getResponses().stream()
-                        .peek(e -> {
+                .invoke(resp -> resp.getResponses()
+                        .forEach(e -> {
                             String code = (String) e.getResult();
                             if (code != null) {
-                                List<TransactionReceiptContractWrapper> wrapper = listOfTxTo.get((int) e.getId());
+                                TransactionReceiptContractWrapper wrapper = listOfTxTo.get((int) e.getId());
+                                int codeBytesLength = code.getBytes().length;
                                 if (wrapper != null) {
-                                    wrapper.forEach(w -> w.setContractCode(code));
+                                    wrapper.setCodeBytesLength(codeBytesLength);
                                 }
                             }
                         })
