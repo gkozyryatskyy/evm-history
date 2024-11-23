@@ -27,11 +27,12 @@ docker compose -f project.yml up -d
 # for runing project from IDE, just run io.evm.history.Main.main(String... args)
 ```
 
-## LOCAL: Checking data
+## LOCAL: Dashboard
 ```
 # Open dashboard
 http://localhost:5601/app/dashboards#/view/5f077338-3ff2-401d-8053-ce95347866bf?_g=(filters:!(),refreshInterval:(pause:!f,value:60000),time:(from:now-1y,to:now))
 ```
+![Screenshot 2024-11-24 at 00.15.26.png](Screenshot%202024-11-24%20at%2000.15.26.png)
 
 ## LOCAL: Stop the application
 
