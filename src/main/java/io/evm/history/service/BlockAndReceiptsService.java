@@ -93,11 +93,11 @@ public class BlockAndReceiptsService {
         for (BigInteger i : blocks) {
             batch.add(eth.ethGetBlockByNumber(DefaultBlockParameter.valueOf(i), true));
         }
-        return RetryUtil.retryBatch(log, "blocks(%s)".formatted(signature), config, batch.sendAsync())
+        return RetryUtil.retryBatch(log, "blocks(%s)".formatted(signature), config.retry(), batch::sendAsync)
                 // block time logging
                 .invoke(e -> {
                     if (e.getResponses() != null && !e.getResponses().isEmpty()) {
-                        log.debugf("Got Blocks:%s from:%s", e.getResponses()
+                        log.infof("Got Blocks:%s from:%s", e.getResponses()
                                 .size(), Instant.ofEpochSecond(((EthBlock.Block) e.getResponses().getFirst()
                                 .getResult()).getTimestamp().longValue()));
                     }
@@ -123,7 +123,7 @@ public class BlockAndReceiptsService {
             req.setId(i); // for mapping back
             batch.add(req);
         }
-        return RetryUtil.retryBatch(log, "receipts(%s)".formatted(signature), config, batch.sendAsync())
+        return RetryUtil.retryBatch(log, "receipts(%s)".formatted(signature), config.retry(), batch::sendAsync)
                 .invoke(resp -> resp.getResponses()
                         .forEach(e -> {
                             TransactionReceipt receipt = (TransactionReceipt) e.getResult();
@@ -145,12 +145,11 @@ public class BlockAndReceiptsService {
                 .getTx()
                 .getHash());
         // group for mapping
-        log.infof("Contracts:%s", signature);
+        log.infof("Contracts:%s Cache:%s", signature, contractCache.size());
         // used for batch response backward mapping. Contract code added for first transaction in batch, where it is found
         List<List<TransactionReceiptContractWrapper>> listOfTxTo = new ArrayList<>();
         // send batch request
         BatchRequest batch = eth.newBatch();
-        //TODO add caching check
         txs.stream()
                 .filter(e -> e.getReceipt().getContractAddress() != null)
                 .collect(Collectors.groupingBy(e -> e.getReceipt().getContractAddress()))
@@ -165,7 +164,7 @@ public class BlockAndReceiptsService {
                         listOfTxTo.add(list);
                     }
                 });
-        return RetryUtil.retryBatch(log, "contracts(%s)".formatted(signature), config, batch.sendAsync())
+        return RetryUtil.retryBatch(log, "contracts(%s)".formatted(signature), config.retry(), batch::sendAsync)
                 .invoke(resp -> resp.getResponses()
                         .forEach(r -> {
                             String code = (String) r.getResult();

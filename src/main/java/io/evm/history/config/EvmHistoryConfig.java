@@ -8,8 +8,9 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 @ConfigMapping(prefix = "evm.history.export")
-public interface EvmHistoryConfig extends RetryConfig {
+public interface EvmHistoryConfig {
 
+    RetryConfig retry();
     @WithDefault("true")
     boolean enabled();
     BigInteger blockFrom();

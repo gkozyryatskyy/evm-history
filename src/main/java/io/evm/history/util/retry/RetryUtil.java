@@ -15,11 +15,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @UtilityClass
 public class RetryUtil {
 
-    public  Uni<BatchResponse> retryBatch(Logger log, String logMethod, RetryConfig config, CompletableFuture<BatchResponse> batchFuture) {
+    public Uni<BatchResponse> retryBatch(Logger log, String logMethod, RetryConfig config, Supplier<CompletableFuture<BatchResponse>> batchFuture) {
         return retry(log, logMethod, config, Uni.createFrom()
                 // web3j http errors wrapped in ClientConnectionException
                 .completionStage(batchFuture)
@@ -38,11 +39,16 @@ public class RetryUtil {
                 })), e -> e instanceof IOException || e instanceof IllegalStateException || e instanceof ClientConnectionException);
     }
 
-    public  <T> Uni<T> retry(Logger log, String logMethod, RetryConfig config, Uni<T> uni, Predicate<? super Throwable> retry) {
+    public <T> Uni<T> retry(Logger log, String logMethod, RetryConfig config, Uni<T> uni, Predicate<? super Throwable> retry) {
         AtomicInteger i = new AtomicInteger();
         return uni.onFailure(e -> {
                     if (retry.test(e)) {
-                        log.errorf(e, "Retry:[%s/%s] [%s] exception.", i.incrementAndGet(), config.atMost(), logMethod);
+                        if (log.isDebugEnabled()) {
+                            log.errorf(e, "Retry:[%s/%s] [%s] exception.", i.incrementAndGet(), config.atMost(), logMethod);
+                        } else {
+                            log.errorf("Retry:[%s/%s] [%s] exception. %s: %s", i.incrementAndGet(), config.atMost(), logMethod, e.getClass()
+                                    .getSimpleName(), e.getMessage());
+                        }
                         return true;
                     } else {
                         return false;
