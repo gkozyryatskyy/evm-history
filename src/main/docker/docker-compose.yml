@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+
+  es-node1:
+    image: elasticsearch:8.15.0
+    container_name: es-node1
+    environment:
+      - cluster.name=es-cluster
+      - node.name=es-node1
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - xpack.security.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.watcher.enabled=false
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - evm-history-es-data1:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - evm-history-net
+
+  kibana-node1:
+    image: kibana:8.15.0
+    container_name: kibana-node1
+    depends_on:
+      es-node1:
+        condition: service_started
+    volumes:
+      - evm-history-kibana-node1:/usr/share/kibana/data
+    ports:
+      - "5601:5601"
+    expose:
+      - "5601"
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_HOSTS: '["http://es-node1:9200"]'
+    networks:
+      - evm-history-net
+
+volumes:
+  evm-history-es-data1:
+  evm-history-kibana-node1:
+
+networks:
+  evm-history-net:

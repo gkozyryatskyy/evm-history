@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+
+  evm-history-project:
+    image: gkozyryatskyy/evm-history:0.0.1
+    environment:
+      QUARKUS_PROFILE: local
+      QUARKUS_ELASTICSEARCH_HOSTS: es-node1:9200
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 1G
+    ports:
+      - "8080:8080"
+    networks:
+      - evm-history-net
+
+networks:
+  evm-history-net:
