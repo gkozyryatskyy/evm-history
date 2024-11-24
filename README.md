@@ -57,14 +57,21 @@ docker compose down -v
 
 ## INFO
 
-- All RPC calls (blocks, receipts, contract code) are `batched`
-- Added `throttling` and `retries` to address rate limits and service unavailability
-- Data is `yearly partitioned`, so we assume to be ok on performance even with whole blockchain data (testnet for sure)
-- Data is `indexed`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure)
-- Partial search indexed as `edge_ngram`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure)
+- All RPC calls (blocks, receipts, contract code) are `batched`. See:
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/config/EvmHistoryConfig.java#L18
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/service/BlockAndReceiptsService.java#L67
+- Added `throttling` and `retries` to address rate limits and service unavailability. See:
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/util/retry/RetryUtil.java#L23
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/util/retry/ThrottlingUtil.java
+- Data is `yearly partitioned`, so we assume to be ok on performance even with whole blockchain data (testnet for sure). See:
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/config/core/EsIndexConfig.java#L45
+- Data is `indexed`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure). See:
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/db/model/mapping/TransactionDataIndexMapping.java#L14
+- Partial search indexed as `edge_ngram`, so we assume to be ok on search performance even with whole blockchain data (testnet for sure). See:
+  - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/db/model/core/IIndexMapping.java#L16
 
 # TODO
 - Switch contracts cache to Redis or DB calls
 - Track other contract interactions from logs
-- Get ABI and add abi parsing
+- Get ABI and add tx ABI parsing
 - Try to add contract code decompilation if there is no ABI available
