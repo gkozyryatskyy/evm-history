@@ -154,7 +154,7 @@ public class BlockAndReceiptsService {
         // send batch request
         BatchRequest batch = eth.newBatch();
         txs.stream()
-                .filter(e -> e.getReceipt().getContractAddress() != null)
+                .filter(e -> e.getReceipt() != null && e.getReceipt().getContractAddress() != null)
                 .collect(Collectors.groupingBy(e -> e.getReceipt().getContractAddress()))
                 .forEach((addr, list) -> {
                     Integer codeLength = contractCache.get(addr);

@@ -42,10 +42,12 @@ public class TransactionData implements ITimeSeries {
         this.gas = data.getTx().getGasRaw();
         this.type = data.getTx().getType();
         // receipt
-        this.contractAddress = data.getReceipt().getContractAddress();
-        this.gasUsed = RawUtil.bigint(data.getReceipt()::getGasUsedRaw, data.getReceipt()::getGasUsed).longValue();
-        this.from = data.getReceipt().getFrom();
-        this.to = data.getReceipt().getTo();
+        if (data.getReceipt() != null) {
+            this.contractAddress = data.getReceipt().getContractAddress();
+            this.gasUsed = RawUtil.bigint(data.getReceipt()::getGasUsedRaw, data.getReceipt()::getGasUsed).longValue();
+            this.from = data.getReceipt().getFrom();
+            this.to = data.getReceipt().getTo();
+        }
         if (data.getCodeBytesLength() != null) {
             this.codeBytesLength = data.getCodeBytesLength();
         }
