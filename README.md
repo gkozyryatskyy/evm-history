@@ -33,7 +33,6 @@ docker compose -f project.yml up -d
 # Open dashboard
 http://localhost:8080/
 ```
-![Screenshot 2024-11-24 at 01.21.50.png](Screenshot%202024-11-24%20at%2001.21.50.png)
 
 ## LOCAL: Stop the application
 
@@ -55,8 +54,17 @@ docker compose down -v
 | Healthcheck | `localhost:8080/q/health`  | Healthcheck endpoint                                    |
 | Metrics     | `localhost:8080/q/metrics` | Metrics endpoint. Return metrics in 'Prometheus' format |
 
-## INFO
+## Results
+- top 10 contracts called in the transactions that make up a blocks (by amount of calls)
+![Screenshot 1.png](Screenshot%201.png)
+- For each top 10 contract calculate
+  - the original bytecode size
+  - the maximum gas amount provided by users in calls to the contract
+  ![Screenshot 2.png](Screenshot%202.png)
+  - the top 3 callers of each contract and how many times they called it (click on any contract and whole dashboard will be filtered by this contract)
+  ![Screenshot 3.png](Screenshot%203.png)
 
+## INFO
 - All RPC calls (blocks, receipts, contract code) are `batched`. See:
   - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/config/EvmHistoryConfig.java#L18
   - https://github.com/gkozyryatskyy/evm-history/blob/main/src/main/java/io/evm/history/service/BlockAndReceiptsService.java#L67
