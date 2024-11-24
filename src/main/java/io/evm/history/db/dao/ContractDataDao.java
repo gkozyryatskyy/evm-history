@@ -2,6 +2,8 @@ package io.evm.history.db.dao;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.evm.history.config.ContractIndexConfig;
 import io.evm.history.db.dao.core.CrudDao;
 import io.evm.history.db.model.ContractData;
@@ -10,13 +12,16 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 @ApplicationScoped
 public class ContractDataDao extends CrudDao<ContractData> {
+
+    public static String SCROLL_TIME = "60s";
 
     // for dependency injection
     public ContractDataDao() {
@@ -29,15 +34,29 @@ public class ContractDataDao extends CrudDao<ContractData> {
     }
 
     public Uni<ConcurrentMap<String, Integer>> getAllContracts() {
-        // TODO switch to scroll or distributed cache, like redis
-        return search(r -> r.size(10000))
-                .map(resp -> resp == null ? new ConcurrentHashMap<>() : resp.hits()
-                        .hits()
-                        .stream()
-                        .filter(e -> e.source() != null)
-                        // contract address to CodeBytesLength
-                        .collect(Collectors.toMap(Hit::id, e -> e.source()
-                                .getCodeBytesLength(), (e1, e2) -> e1, ConcurrentHashMap::new)));
+        return getAllContracts(new ConcurrentHashMap<>(), null);
     }
 
+    protected Uni<ConcurrentMap<String, Integer>> getAllContracts(ConcurrentMap<String, Integer> map, String scrollId) {
+        Uni<? extends ResponseBody<ContractData>> res;
+        if (scrollId == null) {
+            res = search(r -> r.size(10000).scroll(s -> s.time(SCROLL_TIME)), true);
+        } else {
+            res = scroll(r -> r.scrollId(scrollId).scroll(s -> s.time(SCROLL_TIME)));
+        }
+        return res.chain(resp -> {
+            Optional<List<Hit<ContractData>>> hits = Optional.ofNullable(resp)
+                    .map(ResponseBody::hits)
+                    .map(HitsMetadata::hits);
+            if (hits.isPresent() && !hits.get().isEmpty()) {
+                hits.get()
+                        .stream()
+                        .filter(e -> e.id() != null && e.source() != null)
+                        .forEach(e -> map.put(e.id(), e.source().getCodeBytesLength()));
+                return getAllContracts(map, resp.scrollId());
+            } else {
+                return Uni.createFrom().item(map);
+            }
+        });
+    }
 }

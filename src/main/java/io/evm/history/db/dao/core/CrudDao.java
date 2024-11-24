@@ -60,6 +60,7 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
                             );
                 }));
     }
+
     // ------------------- BULK -------------------
     public Uni<BulkResponse> bulk(List<T> list) {
         return bulk(list, null);
@@ -127,9 +128,9 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
     }
 
     // ------------------- SEARCH -------------------
-    public Uni<SearchResponse<T>> search(Function<SearchRequest.Builder, SearchRequest.Builder> search) {
+    public Uni<ScrollResponse<T>> scroll(Function<ScrollRequest.Builder, ScrollRequest.Builder> search) {
         return Uni.createFrom().completionStage(Unchecked.supplier(() ->
-                        client.search(req -> search.apply(searchReq(req, config)), type)
+                        client.scroll(search::apply, type)
                 ))
                 // if the index not yet exists
                 .onFailure(e -> e instanceof ElasticsearchException && "index_not_found_exception".equals(((ElasticsearchException) e)
@@ -138,9 +139,26 @@ public class CrudDao<T extends ITimeSeries> extends EsDao {
                 .recoverWithNull();
     }
 
-    private SearchRequest.Builder searchReq(SearchRequest.Builder req, EsIndexConfig config) {
+    public Uni<SearchResponse<T>> search(Function<SearchRequest.Builder, SearchRequest.Builder> search) {
+        return search(search, false);
+    }
+
+    public Uni<SearchResponse<T>> search(Function<SearchRequest.Builder, SearchRequest.Builder> search, boolean scroll) {
+        return Uni.createFrom().completionStage(Unchecked.supplier(() ->
+                        client.search(req -> search.apply(searchReq(req, config, scroll)), type)
+                ))
+                // if the index not yet exists
+                .onFailure(e -> e instanceof ElasticsearchException && "index_not_found_exception".equals(((ElasticsearchException) e)
+                        .error()
+                        .type()))
+                .recoverWithNull();
+    }
+
+    private SearchRequest.Builder searchReq(SearchRequest.Builder req, EsIndexConfig config, boolean scroll) {
         req.index(List.of(config.searchIndex(null)));
+        if (!scroll) {
         req.trackTotalHits(h -> h.enabled(false)).trackScores(false);
+        }
         return req;
     }
 }

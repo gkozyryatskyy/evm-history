@@ -1,5 +1,6 @@
 package io.evm.history.service;
 
+import co.elastic.clients.elasticsearch._types.Refresh;
 import io.evm.history.config.EvmHistoryConfig;
 import io.evm.history.db.dao.ContractDataDao;
 import io.evm.history.db.dao.TransactionDataDao;
@@ -37,6 +38,10 @@ public class ExporterService {
     }
 
     public Uni<Void> export() {
+        return export(Refresh.False);
+    }
+
+    public Uni<Void> export(Refresh refresh) {
         //noinspection ReactiveStreamsUnusedPublisher
         return txDao.findLastBlockNumber()
                 .onItem()
@@ -45,11 +50,11 @@ public class ExporterService {
                 .group()
                 .intoLists()
                 .of(config.persistBatch())
-                .call(this::persist)
+                .call(e -> persist(e, refresh))
                 .onItem().ignoreAsUni();
     }
 
-    protected Uni<Void> persist(List<TransactionReceiptContractWrapper> data) {
+    protected Uni<Void> persist(List<TransactionReceiptContractWrapper> data, Refresh refresh) {
         List<TransactionData> transactions = new ArrayList<>();
         List<ContractData> contracts = new ArrayList<>();
         for (TransactionReceiptContractWrapper tx : data) {
@@ -63,7 +68,7 @@ public class ExporterService {
             log.infof("Persist:%s[%s-%s]", transactions.size() + contracts.size(), data.getFirst()
                     .getBlock()
                     .getNumber(), data.getLast().getBlock().getNumber());
-            return txDao.mBulk(List.of(txDao.bulkOpIndex(transactions), contractDao.bulkOpIndex(contracts)))
+            return txDao.mBulk(List.of(txDao.bulkOpIndex(transactions), contractDao.bulkOpIndex(contracts)), refresh)
                     .replaceWithVoid();
         } else {
             return Uni.createFrom().voidItem();
